@@ -26,12 +26,7 @@ try {
     }
   }
 
-  try {
-    fs.writeFileSync(args[0], plist.build(json));
-    // file written successfully
-  } catch (err) {
-    console.error(err);
-  }
+  fs.writeFileSync(args[0], plist.build(json));
 }
 catch {}
 
