@@ -959,7 +959,7 @@ if [ -n "$run" ] || [ -n "$foul_plist" ]; then
 
     # CREATING OUTPUT DIRECTORY
     mkdir -p "$(dirname "$outdir")"
-    if [[ -e "$outdir" && "$outdir" == @(*.ipa|*.ipa) ]]; then rm -rf "$outdir"; fi
+    if [[ -e "$outdir" ]]; then rm -rf "$outdir"; fi
     Announce "Generating iPA..."
         
     if [ -n "$full_unzipped" ]; then
@@ -994,14 +994,30 @@ if [ -n "$run" ] || [ -n "$foul_plist" ]; then
                 fi
             fi
         done < <(find "$dir/Payload" -name "Info.plist")
+        if [ -n "$output_unzipped" ]; then
+            rm -rf "$outdir/Watch" &>/dev/null
+        else
+            zip -qq -d "$outdir" "Payload/*.app/Watch/*" &>/dev/null
+        fi
         Verbose "Removed Watch App" "Couldn't Remove Watch App" -x -v
     fi
 
     # REMOVING EXTENSIONS
     if [ -n "$remove_extensions" ]; then
-        zip -qq -d "$outdir" "Payload/*.app/PlugIns/*" &>/dev/null
-        stat="$?"
-        if [ "$stat" != "12" ]; then status="$stat"; fi
+        if [ -n "$output_unzipped" ]; then
+            rm -rf "$outdir/PlugIns" &>/dev/null
+            $azule/modules/clean_resource.js "$outdir/_CodeSignature/CodeResources"
+            status="$?"
+        else
+            zip -qq -d "$outdir" "Payload/*.app/PlugIns/*" &>/dev/null
+            mkdir $dir/.tmp &>/dev/null
+            unzip -qq "$outdir" "Payload/*.app/_CodeSignature/CodeResources" -d "$dir/.tmp" &>/dev/null
+            $azule/modules/clean_resource.js "$dir/.tmp/Payload/$appname/_CodeSignature/CodeResources" &>/dev/null
+            cd "$dir/.tmp"
+            zip -qq -ur "$outdir" . &>/dev/null
+            stat="$?"
+            if [ "$stat" != "12" ]; then status="$stat"; fi
+        fi
         Verbose "Removed Extensions" "Couldn't Remove Extensions" -x
     fi
 fi
