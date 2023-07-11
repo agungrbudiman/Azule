@@ -935,7 +935,7 @@ fi
 # RESTORING ENTITLEMENTS
 if [ -n "$run" ]; then
     if [ -n "$remove_extensions" ]; then
-        $azule/modules/clean_entitlements.js "$dir/exec_entitlements"
+        $azule/modules/azule_entitlements.js "$dir/exec_entitlements"
     fi
     ldid -S"$dir/exec_entitlements" "$executable"
     Verbose "Restored App Entitlements" "Couldn't Restore App Entitlements" -v
@@ -1009,16 +1009,16 @@ if [ -n "$run" ] || [ -n "$foul_plist" ]; then
     if [ -n "$remove_extensions" ]; then
         if [ -n "$output_unzipped" ]; then
             rm -rf "$outdir/PlugIns" &>/dev/null
-            $azule/modules/clean_resource.js "$outdir/_CodeSignature/CodeResources"
-            $azule/modules/clean_resource.js "$outdir/SC_Info/Manifest.plist"
+            $azule/modules/azule_codesign.js "$outdir/_CodeSignature/CodeResources"
+            $azule/modules/azule_codesign.js "$outdir/SC_Info/Manifest.plist"
             status="$?"
         else
             zip -qq -d "$outdir" "Payload/*.app/PlugIns/*" &>/dev/null
             mkdir $dir/.tmp &>/dev/null
             unzip -qq "$outdir" "Payload/*.app/_CodeSignature/CodeResources" -d "$dir/.tmp" &>/dev/null
             unzip -qq "$outdir" "Payload/*.app/SC_Info/Manifest.plist" -d "$dir/.tmp" &>/dev/null
-            $azule/modules/clean_resource.js "$dir/.tmp/Payload/$appname/_CodeSignature/CodeResources"
-            $azule/modules/clean_resource.js "$dir/.tmp/Payload/$appname/SC_Info/Manifest.plist"
+            $azule/modules/azule_codesign.js "$dir/.tmp/Payload/$appname/_CodeSignature/CodeResources"
+            $azule/modules/azule_codesign.js "$dir/.tmp/Payload/$appname/SC_Info/Manifest.plist"
             cd "$dir/.tmp"
             zip -qq -ur "$outdir" . &>/dev/null
             stat="$?"
