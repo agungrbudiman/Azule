@@ -935,7 +935,7 @@ fi
 # RESTORING ENTITLEMENTS
 if [ -n "$run" ]; then
     if [ -n "$remove_extensions" ]; then
-        $azule/modules/azule_entitlements.js "$dir/exec_entitlements"
+        $azule/modules/azule_entitlements.py "$dir/exec_entitlements"
     fi
     ldid -S"$dir/exec_entitlements" "$executable"
     Verbose "Restored App Entitlements" "Couldn't Restore App Entitlements" -v
