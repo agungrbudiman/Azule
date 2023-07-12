@@ -157,6 +157,7 @@ help () {
     echo "  -u                           Remove UISupportedDevices from app"
     echo "  -S                           Fakesigns iPA for use with AppSync"
     echo "  -e                           Removes App Extensions"
+    echo "  -E                           Clean App Entitlements and CodeSign (require python and plistlib)"
 
     if [ "$os" == "iOS" ] || [ -n "$unsafe_help" ]; then
         echo
@@ -405,7 +406,7 @@ trap "cleanup" SIGINT
 trap "cleanup" EXIT
 
 # CLI ARGUEMENTS
-while getopts n:i:o:c:b:x:f:p:C:huSewsrDHqAdjRyUzgmFZLklv args; do
+while getopts n:i:o:c:b:x:f:p:C:huSewsrDHqAdjRyUzgmFZLklvE args; do
 
     # STUFF WITH PARAMETERS
     if [[ "$args" == @(x|n|b|p|i|o|c|f|A|z|C) ]]; then
@@ -442,6 +443,7 @@ while getopts n:i:o:c:b:x:f:p:C:huSewsrDHqAdjRyUzgmFZLklv args; do
         # SWITCHES
         d) no_recurse=1 ;;
         e) remove_extensions=1 && run=1 ;;
+        E) clean_resources=1 ;;
         j) allow_root_run=1 ;;
         m) no_inject_hl=1 ;;
         q) ignore_errors=1 ;;
@@ -934,8 +936,8 @@ fi
 
 # RESTORING ENTITLEMENTS
 if [ -n "$run" ]; then
-    if [ -n "$remove_extensions" ]; then
-        $azule/modules/azule_entitlements.py "$dir/exec_entitlements"
+    if [ -n "$remove_extensions" ] && [ -n "$clean_resources" ]; then
+        $azule/modules/azule_entitlements.py "$dir/exec_entitlements" &>/dev/null
     fi
     ldid -S"$dir/exec_entitlements" "$executable"
     Verbose "Restored App Entitlements" "Couldn't Restore App Entitlements" -v
@@ -1009,18 +1011,22 @@ if [ -n "$run" ] || [ -n "$foul_plist" ]; then
     if [ -n "$remove_extensions" ]; then
         if [ -n "$output_unzipped" ]; then
             rm -rf "$outdir/PlugIns" &>/dev/null
-            $azule/modules/azule_codesign.py "$outdir/_CodeSignature/CodeResources"
-            $azule/modules/azule_codesign.py "$outdir/SC_Info/Manifest.plist"
+            if [ -n "$clean_resources" ]; then
+                $azule/modules/azule_codesign.py "$outdir/_CodeSignature/CodeResources" &>/dev/null
+                $azule/modules/azule_codesign.py "$outdir/SC_Info/Manifest.plist" &>/dev/null
+            fi
             status="$?"
         else
             zip -qq -d "$outdir" "Payload/*.app/PlugIns/*" &>/dev/null
-            mkdir $dir/.tmp &>/dev/null
-            unzip -qq "$outdir" "Payload/*.app/_CodeSignature/CodeResources" -d "$dir/.tmp" &>/dev/null
-            unzip -qq "$outdir" "Payload/*.app/SC_Info/Manifest.plist" -d "$dir/.tmp" &>/dev/null
-            $azule/modules/azule_codesign.py "$dir/.tmp/Payload/$appname/_CodeSignature/CodeResources"
-            $azule/modules/azule_codesign.py "$dir/.tmp/Payload/$appname/SC_Info/Manifest.plist"
-            cd "$dir/.tmp"
-            zip -qq -ur "$outdir" . &>/dev/null
+            if [ -n "$clean_resources" ]; then
+                mkdir $dir/.tmp &>/dev/null
+                unzip -qq "$outdir" "Payload/*.app/_CodeSignature/CodeResources" -d "$dir/.tmp" &>/dev/null
+                unzip -qq "$outdir" "Payload/*.app/SC_Info/Manifest.plist" -d "$dir/.tmp" &>/dev/null
+                $azule/modules/azule_codesign.py "$dir/.tmp/Payload/$appname/_CodeSignature/CodeResources" &>/dev/null
+                $azule/modules/azule_codesign.py "$dir/.tmp/Payload/$appname/SC_Info/Manifest.plist" &>/dev/null
+                cd "$dir/.tmp"
+                zip -qq -ur "$outdir" . &>/dev/null
+            fi
             stat="$?"
             if [ "$stat" != "12" ]; then status="$stat"; fi
         fi

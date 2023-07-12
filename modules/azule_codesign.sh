@@ -11,13 +11,15 @@ ExtractPlistKey(){
 			s/\\\./\\\\\./g')"
 }
 
+output=$(<"$file")
+
 for rootkey in "${rootkeys[@]}"
 do
 	ExtractPlistKey $rootkey
 	while read -r key; do
-		# echo "$rootkey.$key"
-	    plutil -remove "$rootkey.$key" -o "$file" "$file"
+		echo "$rootkey.$key"
+	    output="$(plutil -remove "$rootkey.$key" -o - - <<< "$output")"
 	done <<< "$values"
 done
 
-
+echo "$output" > "$file"
